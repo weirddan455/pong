@@ -1,1 +1,1 @@
-gcc pong.c -o pong -lSDL2 -O2
+gcc pong.c score.c -o pong -lSDL2 -O2 -Wall

@@ -1,4 +1,8 @@
 #include <SDL2/SDL.h>
+#include "score.h"
+
+#define PADDLE_W 20
+#define PADDLE_H 50
 
 #define BALL_W 20
 #define BALL_H 20
@@ -16,6 +20,15 @@ typedef struct GameState {
     Sint16 *wallSound;
     Sint16 *paddleSound;
     Sint16 *scoreSound;
+    SDL_Texture *player1ScoreTex1;
+    SDL_Texture *player1ScoreTex2;
+    SDL_Texture *player2ScoreTex1;
+    SDL_Texture *player2ScoreTex2;
+    SDL_Rect player1ScoreRect1;
+    SDL_Rect player1ScoreRect2;
+    SDL_Rect player2ScoreRect1;
+    SDL_Rect player2ScoreRect2;
+    SDL_Texture *textures[10];
 } GameState;
 
 Sint16* genSquareWave(int samples, int tone) {
@@ -47,18 +60,19 @@ GameState* initGameState(SDL_Renderer *renderer) {
     int centerW = rendW / 2;
     int centerH = rendH / 2;
 
-    int paddleW = 20;
-    int paddleH = 50;
-    int paddleY = centerH - (paddleH / 2);
+    int player1Center = centerW / 2;
+    int player2Center = centerW + player1Center;
 
-    gameState->player1.w = paddleW;
-    gameState->player1.h = paddleH;
+    int paddleY = centerH - (PADDLE_H / 2);
+
+    gameState->player1.w = PADDLE_W;
+    gameState->player1.h = PADDLE_H;
     gameState->player1.x = 20;
     gameState->player1.y = paddleY;
 
-    gameState->player2.w = paddleW;
-    gameState->player2.h = paddleH;
-    gameState->player2.x = rendW - paddleW - 20;
+    gameState->player2.w = PADDLE_W;
+    gameState->player2.h = PADDLE_H;
+    gameState->player2.x = rendW - PADDLE_W - 20;
     gameState->player2.y = paddleY;
 
     gameState->ball.w = BALL_W;
@@ -77,6 +91,42 @@ GameState* initGameState(SDL_Renderer *renderer) {
     gameState->wallSound = genSquareWave(4096, 128);
     gameState->paddleSound = genSquareWave(4096, 16);
     gameState->scoreSound = genSquareWave(16384, 256);
+
+    gameState->textures[0] = genTex0(renderer);
+    gameState->textures[1] = genTex1(renderer);
+    gameState->textures[2] = genTex2(renderer);
+    gameState->textures[3] = genTex3(renderer);
+    gameState->textures[4] = genTex4(renderer);
+    gameState->textures[5] = genTex5(renderer);
+    gameState->textures[6] = genTex6(renderer);
+    gameState->textures[7] = genTex7(renderer);
+    gameState->textures[8] = genTex8(renderer);
+    gameState->textures[9] = genTex9(renderer);
+
+    gameState->player1ScoreTex1 = gameState->textures[0];
+    gameState->player1ScoreTex2 = gameState->textures[0];
+    gameState->player2ScoreTex1 = gameState->textures[0];
+    gameState->player2ScoreTex2 = gameState->textures[0];
+
+    gameState->player1ScoreRect1.w = SCORE_W;
+    gameState->player1ScoreRect1.h = SCORE_H;
+    gameState->player1ScoreRect1.x = player1Center - 10 - SCORE_W;
+    gameState->player1ScoreRect1.y = 20;
+
+    gameState->player1ScoreRect2.w = SCORE_W;
+    gameState->player1ScoreRect2.h = SCORE_H;
+    gameState->player1ScoreRect2.x = player1Center + 10;
+    gameState->player1ScoreRect2.y = 20;
+
+    gameState->player2ScoreRect1.w = SCORE_W;
+    gameState->player2ScoreRect1.h = SCORE_H;
+    gameState->player2ScoreRect1.x = player2Center - 10 - SCORE_W;
+    gameState->player2ScoreRect1.y = 20;
+
+    gameState->player2ScoreRect2.w = SCORE_W;
+    gameState->player2ScoreRect2.h = SCORE_H;
+    gameState->player2ScoreRect2.x = player2Center + 10;
+    gameState->player2ScoreRect2.y = 20;
 
     return gameState;
 }
@@ -133,7 +183,10 @@ void updateGameState(GameState *gameState, SDL_Renderer *renderer, SDL_AudioDevi
     // Check if a player scored. If not, check collision between ball and paddles.
     if (gameState->ball.x < 0) {
         gameState->player2Score++;
-        printf("Player 2 scores.\nPlayer 1 Score: %d\nPlayer 2 Score: %d\n", gameState->player1Score, gameState->player2Score);
+        if (gameState->player2Score > 99) {
+            gameState->player2Score = 0;
+        }
+        updateScoreTex(gameState->player2Score, &gameState->player2ScoreTex1, &gameState->player2ScoreTex2, gameState->textures);
         gameState->ball.w = BALL_W;
         gameState->ball.h = BALL_H;
         gameState->ball.x = ballResetX;
@@ -141,7 +194,10 @@ void updateGameState(GameState *gameState, SDL_Renderer *renderer, SDL_AudioDevi
         SDL_QueueAudio(audioDevice, gameState->scoreSound, 16384 * 4);
     } else if (gameState->ball.x + gameState->ball.w > rendW) {
         gameState->player1Score++;
-        printf("Player 1 scores.\nPlayer 1 Score: %d\nPlayer 2 Score: %d\n", gameState->player1Score, gameState->player2Score);
+        if (gameState->player1Score > 99) {
+            gameState->player1Score = 0;
+        }
+        updateScoreTex(gameState->player1Score, &gameState->player1ScoreTex1, &gameState->player1ScoreTex2, gameState->textures);
         gameState->ball.w = BALL_W;
         gameState->ball.h = BALL_H;
         gameState->ball.x = ballResetX;
@@ -168,6 +224,10 @@ void renderFrame(GameState *gameState, SDL_Renderer *renderer) {
     SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
     SDL_RenderClear(renderer);
     SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
+    SDL_RenderCopy(renderer, gameState->player1ScoreTex1, NULL, &gameState->player1ScoreRect1);
+    SDL_RenderCopy(renderer, gameState->player1ScoreTex2, NULL, &gameState->player1ScoreRect2);
+    SDL_RenderCopy(renderer, gameState->player2ScoreTex1, NULL, &gameState->player2ScoreRect1);
+    SDL_RenderCopy(renderer, gameState->player2ScoreTex2, NULL, &gameState->player2ScoreRect2);
     SDL_RenderFillRect(renderer, &gameState->player1);
     SDL_RenderFillRect(renderer, &gameState->player2);
     SDL_RenderFillRect(renderer, &gameState->ball);

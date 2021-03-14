@@ -1,7 +1,7 @@
 # pong
 Pong clone written in C using the SDL2 library.
 
-No assets are required for this game. Sound is simple square waves generated at run-time. Showing the score on screen is on the to-do list. For now, it outputs the score to the console.
+No assets are required for this game. Sound is simple square waves generated at run-time and all graphics are rendered using SDL primatives.
 
 ## Prerequisites
 You will need to have gcc and SDL2 installed as well as the header files (some distros package these seperately as "-devel" packages.)
